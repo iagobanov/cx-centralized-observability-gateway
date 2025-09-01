@@ -57,7 +57,7 @@ make get-endpoint
 ### For Customers (Self-Service)
 
 ```bash
-# 1. Configure gateway endpoint (provided by Coralogix)
+# 1. Configure gateway endpoint (provided by the central Gateway)
 export GATEWAY_ENDPOINT="k8s-xxx.elb.us-east-2.amazonaws.com:4317"
 
 # 2. Deploy agent to your cluster
@@ -71,20 +71,20 @@ make deploy-samples
 
 ## 📋 Prerequisites
 
-### AWS Gateway (Coralogix)
+### AWS Gateway (EKS)
 - AWS CLI with admin permissions
 - Terraform >= 1.0
 - kubectl >= 1.21
 - Helm 3.x
 - Valid Coralogix private key
 
-### Local Agent (Customer)
+### Local Agent (Application deploy - k8s)
 - kubectl access to target cluster  
-- Gateway endpoint from Coralogix
+- Gateway endpoint from centralized Gateway
 
 ## 🛠️ Detailed Deployment Guide
 
-### Coralogix Deployment (AWS Infrastructure + Gateway)
+### Deployment (AWS Infrastructure + Gateway)
 
 #### Step 1: AWS EKS Infrastructure
 ```bash
@@ -120,7 +120,7 @@ make get-endpoint
 
 #### Step 1: Configure Gateway Endpoint
 ```bash
-# Use endpoint provided by Coralogix
+# Use endpoint provided by centralized Gateway
 export GATEWAY_ENDPOINT="k8s-xxx.elb.us-east-2.amazonaws.com:4317"
 
 # Alternative: Edit sample-otel-agent/values.yaml manually
