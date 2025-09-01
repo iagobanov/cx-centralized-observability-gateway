@@ -25,13 +25,21 @@ kubectl cluster-info
 # Deploy gateway
 echo "🛠️  Deploying gateway components..."
 cd "$ROOT_DIR/gateway"
+
+# Ensure namespace exists first
+echo "📦 Creating namespace..."
+kubectl apply -f namespace.yaml
+
+# Create secret (now that namespace exists)
 ./create-secret.sh
+
+# Apply remaining resources
 kubectl kustomize . --enable-helm | kubectl apply -f -
 
 # Wait for readiness
 echo "⏳ Waiting for gateway to be ready..."
-kubectl wait --for=condition=available --timeout=600s deployment/coralogix-opentelemetry-gateway -n otel-sampling-cx
-kubectl wait --for=condition=available --timeout=600s deployment/coralogix-opentelemetry-receiver -n otel-sampling-cx
+kubectl wait --for=condition=available --timeout=300s deployment/coralogix-opentelemetry-gateway -n otel-sampling-cx
+kubectl wait --for=condition=available --timeout=300s deployment/coralogix-opentelemetry-receiver -n otel-sampling-cx
 
 # Get endpoint
 ALB_ENDPOINT=$(kubectl get svc coralogix-opentelemetry-receiver -n otel-sampling-cx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')

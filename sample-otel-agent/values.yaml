@@ -6,7 +6,7 @@ global:
   defaultSubsystemName: "integration" 
   logLevel: "warn"
   collectionInterval: "30s"
-  gatewayEndpoint: "k8s-otelsamp-coralogi-678b64c4f7-58c72d1fbf7150cf.elb.us-east-2.amazonaws.com:4317"
+  gatewayEndpoint: "REPLACE_WITH_GATEWAY_ENDPOINT"
 
 opentelemetry-agent:
   enabled: true

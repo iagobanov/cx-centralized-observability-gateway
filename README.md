@@ -57,13 +57,16 @@ make get-endpoint
 ### For Customers (Self-Service)
 
 ```bash
-# 1. Configure gateway endpoint (provided by the central Gateway)
-export GATEWAY_ENDPOINT="k8s-xxx.elb.us-east-2.amazonaws.com:4317"
+# 1. Switch to your local cluster context
+kubectl config use-context <your-local-cluster>
 
-# 2. Deploy agent to your cluster
+# 2. Set Coralogix private key
+export CORALOGIX_PRIVATE_KEY="cxtp_your_key_here"
+
+# 3. Deploy agent (automatically retrieves latest gateway endpoint)
 make deploy-agent
 
-# 3. Optional: Deploy sample apps for testing
+# 4. Optional: Deploy sample apps for testing
 make deploy-samples
 
 # Combined: make customer-setup
@@ -78,9 +81,10 @@ make deploy-samples
 - Helm 3.x
 - Valid Coralogix private key
 
-### Local Agent (Application deploy - k8s)
-- kubectl access to target cluster  
-- Gateway endpoint from centralized Gateway
+### Local Agent (Customer clusters)
+- kubectl access to target cluster
+- AWS credentials with EKS access (to retrieve gateway endpoint)
+- Valid Coralogix private key
 
 ## 🛠️ Detailed Deployment Guide
 
@@ -118,16 +122,23 @@ make get-endpoint
 
 ### Customer Deployment (Agent + Apps)
 
-#### Step 1: Configure Gateway Endpoint
+#### Step 1: Set Required Environment Variables
 ```bash
-# Use endpoint provided by centralized Gateway
-export GATEWAY_ENDPOINT="k8s-xxx.elb.us-east-2.amazonaws.com:4317"
+# Coralogix private key (required)
+export CORALOGIX_PRIVATE_KEY="cxtp_your_key_here"
 
-# Alternative: Edit sample-otel-agent/values.yaml manually
+# AWS credentials (required for gateway endpoint retrieval)
+export AWS_ACCESS_KEY_ID="your_access_key"
+export AWS_SECRET_ACCESS_KEY="your_secret_key"
+export AWS_SESSION_TOKEN="your_session_token"  # If using STS
 ```
 
 #### Step 2: Deploy Agent
 ```bash
+# Ensure you're on your local cluster context
+kubectl config use-context <your-local-cluster>
+
+# Deploy agent (automatically retrieves gateway endpoint)
 make deploy-agent
 ```
 
@@ -270,7 +281,7 @@ kubectl logs -l app.kubernetes.io/name=opentelemetry-receiver -n otel-sampling-c
 ```bash
 # Test ALB connectivity from customer cluster
 kubectl run connectivity-test --image=busybox --rm -it --restart=Never -- \
-  nc -zv k8s-xxx.elb.us-east-2.amazonaws.com 4317
+  nc -zv <your-gateway-endpoint> 4317
 
 # Check collector configuration
 kubectl get configmap coralogix-opentelemetry-collector -o yaml | grep -A5 -B5 endpoint

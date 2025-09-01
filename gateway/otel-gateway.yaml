@@ -3,6 +3,10 @@ opentelemetry-gateway:
   enabled: true
   replicaCount: 3
 
+  service:
+    type: ClusterIP
+    clusterIP: ""
+
   config:
     # This splits the 100 percent sampling out into its own route / path
     connectors:
@@ -19,7 +23,7 @@ opentelemetry-gateway:
           enabled: true
         sending_queue:
           enabled: true
-        private_key: "{{ .Values.global.coralogixPrivateKey }}"
+        private_key: "${env:CORALOGIX_PRIVATE_KEY}"
         domain: "{{ .Values.global.domain }}"
         application_name: "{{ .Values.global.defaultApplicationName }}"
         subsystem_name: "{{ .Values.global.defaultSubsystemName }}"
