@@ -1,0 +1,52 @@
+---
+opentelemetry-receiver:
+  enabled: true
+  replicaCount: 3
+
+  service:
+    enabled: true
+    type: LoadBalancer
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: otel-receiver.demo.io
+      service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
+      service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+      service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+
+  ingress:
+    enabled: false
+
+  presets:
+    loadBalancing:
+      enabled: true
+      routingKey: "traceID"
+      hostname: coralogix-opentelemetry-gateway.otel-sampling-cx.svc.cluster.local
+
+  ports:
+    otlp:
+      enabled: true
+      containerPort: 4317
+      servicePort: 4317
+      hostPort: 4317
+      protocol: TCP
+      appProtocol: grpc
+    otlp-http:
+      enabled: true
+      containerPort: 4318
+      servicePort: 4318
+      hostPort: 4318
+      protocol: TCP
+
+  config:
+    processors:
+      k8sattributes:
+        passthrough: true
+      resource/metadata:
+        attributes:
+          - action: upsert
+            key: cx.otel_integration.name
+            value: coralogix-integration-helm
+    service:
+      pipelines:
+        traces:
+          exporters:
+            - loadbalancing

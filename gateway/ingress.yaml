@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: otel
+  labels:
+    app.kubernetes.io/instance: otel-sampling-cx
+    app.kubernetes.io/name: opentelemetry-receiver
+    component: standalone-collector
+  name: coralogix-opentelemetry-receiver-http
+  namespace: otel-sampling-cx
+spec:
+  rules:
+    - host: otel-receiver-http.demo.io
+      http:
+        paths:
+          - backend:
+              service:
+                name: coralogix-opentelemetry-receiver-http
+                port: 
+                  number: 4318
+            pathType: ImplementationSpecific

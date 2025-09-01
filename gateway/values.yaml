@@ -1,0 +1,12 @@
+---
+global:
+  domain: "coralogix.com"
+  clusterName: "otel-centralized-gw"
+  coralogixPrivateKey: ""
+
+opentelemetry-agent:
+  enabled: false
+opentelemetry-cluster-collector:
+  enabled: false
+opentelemetry-agent-windows:
+  enabled: false

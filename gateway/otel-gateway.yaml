@@ -1,0 +1,99 @@
+---
+opentelemetry-gateway:
+  enabled: true
+  replicaCount: 3
+
+  config:
+    # This splits the 100 percent sampling out into its own route / path
+    connectors:
+      routing:
+        default_pipelines: [traces/sampled]
+        table:
+          - statement: route() where attributes["100_sampling"] == "true"
+            pipelines: [traces/full]
+
+    exporters:
+      coralogix:
+        timeout: "30s"
+        retry_on_failure:
+          enabled: true
+        sending_queue:
+          enabled: true
+        private_key: "{{ .Values.global.coralogixPrivateKey }}"
+        domain: "{{ .Values.global.domain }}"
+        application_name: "{{ .Values.global.defaultApplicationName }}"
+        subsystem_name: "{{ .Values.global.defaultSubsystemName }}"
+        application_name_attributes:
+        - cx.application.name
+        - log_system
+        - k8s.namespace.name
+        - service.namespace
+        subsystem_name_attributes:
+        - cx.subsystem.name
+        - log_service
+        - k8s.deployment.name
+        - k8s.statefulset.name
+        - k8s.daemonset.name
+        - k8s.cronjob.name
+        - service.name
+
+    processors:
+      resource/metadata:
+        attributes:
+          - action: upsert
+            key: cx.otel_integration.name
+            value: coralogix-integration-helm
+
+      k8sattributes:
+        passthrough: true
+      # probabilistic_sampler:
+      #   sampling_percentage: 0.33
+
+      tail_sampling:
+        decision_wait: 5
+        policies:
+          - name: 500-errors-policy
+            type: and
+            and:
+              and_sub_policy:
+                - name: status-500-policy
+                  type: ottl_condition
+                  ottl_condition:
+                    error_mode: ignore
+                    span: ['IsMatch(attributes["http.status_code"], "5..")']
+                - name: probabilistic-500-policy
+                  type: probabilistic
+                  probabilistic:
+                    sampling_percentage: 90.0
+                - name: rate-limiting-500-policy
+                  type: rate_limiting
+                  rate_limiting:
+                    spans_per_second: 400
+          - name: probabilistic-low-sample-policy
+            type: probabilistic
+            probabilistic:
+              sampling_percentage: 95.0
+
+    # Service endpoints and routing
+    service:
+      pipelines:
+        traces:
+          exporters: [routing]
+          processors: [memory_limiter, k8sattributes, resource/metadata]
+          receivers: [otlp]
+
+        traces/full:
+          exporters: [coralogix]
+          processors: [batch]
+          receivers: [routing]
+
+        traces/sampled:
+          exporters: [coralogix]
+          processors: [tail_sampling, batch]
+          receivers: [routing]
+
+      # Logs for Open Telemetry itself
+      telemetry:
+        logs:
+          encoding: json
+          level: "debug"

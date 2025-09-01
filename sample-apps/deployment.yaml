@@ -1,0 +1,185 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cx-sample
+---
+### Flask Server Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cx-server-payments
+  namespace: cx-sample
+spec:
+  selector:
+    app: cx-server-payments
+  ports:
+  - protocol: TCP
+    port: 5000
+    targetPort: 5000
+---
+# Flask Server Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cx-server-payments
+  namespace: cx-sample
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cx-server-payments
+  template:
+    metadata:
+      labels:
+        app: cx-server-payments
+    spec:
+      containers:
+      - name: cx-server-payments
+        image: public.ecr.aws/w3s4j9x9/microservices-demo:python
+        imagePullPolicy: Always
+        workingDir: /home/code
+        ports:
+          - name: http
+            containerPort: 5000
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        env:
+        - name: OTEL_SERVICE_NAME
+          value: cx-server-payments
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: cx.application.name=cx-server-payments,cx.subsystem.name=cx-server-payments
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: http://coralogix-opentelemetry-collector.default.svc.cluster.local:4317
+        - name: OTEL_METRICS_EXPORTER
+          value: none
+        - name: PYTHON_TEST_URLGOOD
+          value: "GOOD"
+        - name: REDIS_SERVICE_HOST
+          value: cx-redis
+        - name: REDIS_PASSWORD
+          value: ""
+        command: ["/bin/sh"]
+        args: ["entrypoint-server-payment.sh"]
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cx-redis
+  namespace: cx-sample
+spec:
+  selector:
+    app: cx-redis
+  ports:
+  - protocol: TCP
+    port: 6379
+    targetPort: 6379
+---
+# Redis Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cx-redis
+  namespace: cx-sample
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cx-redis
+  template:
+    metadata:
+      labels:
+        app: cx-redis
+    spec:
+      containers:
+      - name: redis
+        image: public.ecr.aws/w3s4j9x9/microservices-demo:redis
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+---
+# Python Requests Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cx-client-shopping-cart
+  namespace: cx-sample
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cx-client-shopping-cart
+  template:
+    metadata:
+      labels:
+        app: cx-client-shopping-cart
+    spec:
+      containers:
+      - name: cx-client-shopping-cart
+        image: public.ecr.aws/w3s4j9x9/microservices-demo:python
+        imagePullPolicy: Always
+        workingDir: /home/code
+        ports:
+          - name: http
+            containerPort: 5000
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        env:
+        - name: OTEL_SERVICE_NAME
+          value: cx-client-shopping-cart
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: cx.application.name=cx-client-shopping-cart,cx.subsystem.name=cx-client-shopping-cart
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: http://coralogix-opentelemetry-collector.default.svc.cluster.local:4317
+        - name: OTEL_METRICS_EXPORTER
+          value: none
+        - name: PYTHON_TEST_URLGOOD
+          value: "GOOD"
+        - name: PYTHON_TEST_URL
+          value: http://cx-server-payments:5000
+        - name: REDIS_PASSWORD
+          value: ""
+        command: ["/bin/sh"]
+        args: ["entrypoint-client-reqs.sh"]
