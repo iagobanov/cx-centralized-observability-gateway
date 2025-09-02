@@ -2,8 +2,6 @@
 
 Enterprise OpenTelemetry gateway for centralized telemetry collection and processing. Enables secure, scalable observability for distributed Kubernetes environments with intelligent tail sampling and routing.
 
-> **Production Ready**: Successfully handling 20k+ traces/sec across 500+ customer clusters with 99.9% uptime
-
 ## 🏗️ Architecture
 
 ```
@@ -457,4 +455,3 @@ MIT License - See [LICENSE](LICENSE) for details
 
 - **GitHub Issues**: [Report bugs](https://github.com/iagobanov/cx-centralized-observability-gateway/issues)
 - **Documentation**: See individual component READMEs
-- **Coralogix Support**: support@coralogix.com
